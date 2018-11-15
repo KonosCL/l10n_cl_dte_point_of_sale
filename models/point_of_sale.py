@@ -5,12 +5,7 @@ from datetime import datetime, timedelta
 from lxml import etree
 from lxml.etree import Element, SubElement
 from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT as DTF
-import time
-import math
-
-import xml.dom.minidom
 import pytz
-import socket
 import collections
 import logging
 
@@ -20,21 +15,17 @@ try:
     from io import BytesIO
 except:
     _logger.warning("no se ha cargado io")
-
 # ejemplo de suds
 import traceback as tb
 import suds.metrics as metrics
-
 try:
     from suds.client import Client
 except:
     pass
-
 try:
     import urllib3
 except:
     pass
-
 try:
     urllib3.disable_warnings()
 except:
@@ -44,33 +35,23 @@ try:
     pool = urllib3.PoolManager()
 except:
     pass
-
-try:
-    import textwrap
-except:
-    pass
-
 try:
     import xmltodict
 except ImportError:
     _logger.info('Cannot import xmltodict library')
-
 try:
     import dicttoxml
     dicttoxml.set_debug(False)
 except ImportError:
     _logger.info('Cannot import dicttoxml library')
-
 try:
     import pdf417gen
 except ImportError:
     _logger.info('Cannot import pdf417gen library')
-
 try:
     import base64
 except ImportError:
     _logger.info('Cannot import base64 library')
-
 try:
     import hashlib
 except ImportError:
@@ -78,7 +59,7 @@ except ImportError:
 
 # timbre patrón. Permite parsear y formar el
 # ordered-dict patrón corespondiente al documento
-timbre  = """<TED version="1.0"><DD><RE>99999999-9</RE><TD>11</TD><F>1</F>\
+timbre = """<TED version="1.0"><DD><RE>99999999-9</RE><TD>11</TD><F>1</F>\
 <FE>2000-01-01</FE><RR>99999999-9</RR><RSR>\
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</RSR><MNT>10000</MNT><IT1>IIIIIII\
 </IT1><CAF version="1.0"><DA><RE>99999999-9</RE><RS>YYYYYYYYYYYYYYY</RS>\
@@ -91,7 +72,7 @@ afeqWjiRVMvV4+s4Q==</FRMA></CAF><TSTED>2014-04-24T12:02:20</TSTED></DD>\
 fHlAa7j08Xff95Yb2zg31sJt6lMjSKdOK+PQp25clZuECig==</FRMT></TED>"""
 result = xmltodict.parse(timbre)
 
-server_url = {'SIICERT':'https://maullin.sii.cl/DTEWS/','SII':'https://palena.sii.cl/DTEWS/'}
+server_url = {'SIICERT': 'https://maullin.sii.cl/DTEWS/','SII':'https://palena.sii.cl/DTEWS/'}
 
 BC = '''-----BEGIN CERTIFICATE-----\n'''
 EC = '''\n-----END CERTIFICATE-----\n'''
@@ -141,7 +122,7 @@ class POS(models.Model):
         ids = [39, 41]
         if self.sequence_id and self.sequence_id.sii_code == 61:
             ids = [61]
-        return [ ('sii_document_class_id.sii_code', 'in', ids) ]
+        return [('sii_document_class_id.sii_code', 'in', ids)]
 
     def _get_barcode_img(self):
         for r in self:
@@ -209,7 +190,7 @@ class POS(models.Model):
             states={'draft': [('readonly', False)]},
             copy=False,
             help="SII request result",
-            default = '',
+            default='',
         )
     canceled = fields.Boolean(
             string="Canceled?",
@@ -412,14 +393,15 @@ version="1.0">
 
     def _prepare_invoice(self):
         result = super(POS, self)._prepare_invoice()
+        sale_journal = self.session_id.config_id.invoice_journal_id
         journal_document_class_id = self.env['account.journal.sii_document_class'].search(
                 [
-                    ('journal_id', '=', self.sale_journal.id),
+                    ('journal_id', '=', sale_journal.id),
                     ('sii_document_class_id.sii_code', 'in', [33]),
                 ],
             )
         if not journal_document_class_id:
-            raise UserError("Por favor defina Secuencia de Facturas para el Journal del POS")
+            raise UserError("Por favor defina Secuencia de Facturas para el Journal %s" % sale_journal.name)
         result.update({
             'activity_description': self.partner_id.activity_description.id,
             'ticket':  self.session_id.config_id.ticket,
@@ -433,6 +415,8 @@ version="1.0">
     def do_validate(self):
         ids = []
         for order in self:
+            if order.session_id.config_id.restore_mode:
+                continue
             order.sii_result = 'NoEnviado'
             #if not order.invoice_id:
             order._timbrar()

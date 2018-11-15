@@ -8,6 +8,7 @@ import json
 
 _logger = logging.getLogger(__name__)
 
+
 class PosSession(models.Model):
     _inherit = "pos.session"
 
@@ -46,6 +47,8 @@ class PosSession(models.Model):
         config_id = self.env['pos.config'].browse(pos_config)
         if not config_id:
             raise UserError(_("You should assign a Point of Sale to your session."))
+        if config_id.restore_mode:
+            return super(PosSession, self).create(values)
         if config_id.secuencia_boleta:
             sequence = config_id.secuencia_boleta
             start_number = sequence.number_next_actual
@@ -74,6 +77,8 @@ class PosSession(models.Model):
             sequence = self.secuencia_boleta
             if not sequence:
                 return
+        if not self.env.user.get_digital_signature(sequence.company_id):
+            raise UserError(_("No Tiene permisos para usar esta secuencia de folios"))
         folio = sequence.number_next_actual
         caffiles = sequence.get_caf_files()
         if not caffiles:
@@ -83,7 +88,6 @@ class PosSession(models.Model):
             caffs += [caffile.decode_caf()]
         if caffs:
             return json.dumps(caffs, ensure_ascii=False)
-        msg = '''El folio de este documento: {} está fuera de rango \
-del CAF vigente (desde {} hasta {}). Solicite un nuevo CAF en el sitio \
-www.sii.cl'''.format(folio, folio_inicial, folio_final)
+        msg = '''No hay CAF para el folio de este documento: {}.\
+ Solicite un nuevo CAF en el sitio www.sii.cl'''.format(folio)
         raise UserError(_(msg))
