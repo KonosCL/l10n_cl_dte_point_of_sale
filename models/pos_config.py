@@ -5,7 +5,6 @@ from odoo.exceptions import UserError, ValidationError
 import logging
 _logger = logging.getLogger(__name__)
 
-
 class PosConfig(models.Model):
     _inherit = "pos.config"
 
@@ -52,13 +51,9 @@ class PosConfig(models.Model):
         ],
         string="Marcar por defecto",
     )
-    restore_mode = fields.Boolean(
-        string="Restore Mode",
-        default=False,
-    )
 
     @api.one
-    @api.constrains('marcar', 'secuencia_boleta', 'secuencia_boleta_exenta', 'iface_invoicing')
+    @api.constrains('marcar','secuencia_boleta', 'secuencia_boleta_exenta', 'iface_invoicing')
     def _check_document_type(self):
         if self.marcar == 'boleta' and not self.secuencia_boleta:
             raise ValidationError("Al marcar por defecto Boletas, "
