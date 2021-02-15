@@ -493,7 +493,7 @@ version="1.0">
                 'user_id': self.env.uid,
                 'tipo_trabajo': 'pasivo',
                 'date_time': (datetime.now() + timedelta(hours=0)),
-                'send_email': False if self[0].company_id.dte_service_provider=='SIICERT' or not self.env['ir.config_parameter'].sudo().get_param('account.auto_send_email', default=True) else True,
+                'send_email': False,
             })
 
     @api.multi
