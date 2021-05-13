@@ -192,6 +192,16 @@
 						</td>
 					</tr>
 					<tr>
+                        <td>
+							<strong>Impuesto</strong>
+						</td>
+                        <td class="text-right">
+                        	<span t-esc="o.amount_tax"
+                        		t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}' />
+                        </td>
+                     </tr>
+
+					<tr>
 						<td>
 							<strong>MONTO TOTAL</strong>
 						</td>
